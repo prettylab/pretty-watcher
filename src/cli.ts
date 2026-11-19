@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 // `pretty manager` - links the project in the current folder to Pretty Server
-// Manager. The work is done by the manager's agent (.pretty/agent.mjs),
-// always downloaded fresh from the manager so it matches its version.
+// Manager. The work is done by the agent (.pretty/agent.mjs). Its source is
+// agent/agent.mjs in this package, but it is always downloaded from the
+// manager, which serves the copy of the package version it runs.
 //
 //   npx pretty manager pair [manager url]   ask the manager to link this project
 //   npx pretty manager unpair               unlink it and remove the agent

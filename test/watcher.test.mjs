@@ -79,9 +79,9 @@ test("auto labels", () => {
   assert.deepEqual(autoLabel("POST", "/api/admin/participant"), { action: "participant.create", label: "Create participant", target: null });
   assert.deepEqual(autoLabel("PATCH", "/api/admin/participant/12"), { action: "participant.update", label: "Update participant", target: "#12" });
   assert.deepEqual(autoLabel("PATCH", "/api/admin/round/12/activate"), { action: "round.activate", label: "Activate round", target: "#12" });
-  assert.deepEqual(autoLabel("POST", "/api/projects/5/members"), { action: "members.create", label: "Create members", target: "#5" });
+  assert.deepEqual(autoLabel("POST", "/api/projects/5/members"), { action: "member.create", label: "Create member", target: "#5" });
   assert.deepEqual(autoLabel("PATCH", "/api/admin/round/set-positions"), { action: "round.set_positions", label: "Set positions round", target: null });
-  assert.deepEqual(autoLabel("POST", "/admin/users", true), { action: "users.action", label: "Action on users", target: null });
+  assert.deepEqual(autoLabel("POST", "/admin/users", true), { action: "user.action", label: "Action on user", target: null });
 });
 
 test("requests become actions with context, rules and resolvers", async () => {
@@ -114,13 +114,13 @@ test("requests become actions with context, rules and resolvers", async () => {
   assert.equal(send.label, "Send invoice");
   assert.equal(send.method, "GET");
 
-  const register = by("register.create");
+  const register = by("register");
   assert.equal(register.label, "Registration submitted");
   assert.equal(register.target, "Anna");
   assert.equal(register.actor, "from-session@example.com");
 
   assert.equal(by("secret.create"), undefined, "describe() returning false drops it");
-  assert.equal(by("users.action").label, "Action on users");
+  assert.equal(by("user.action").label, "Action on user");
   assert.equal(actions.find((action) => action.path === "/plain"), undefined, "plain GETs are not actions");
   assert.equal(by("score.save").label, "Judge scored");
   assert.equal(by("job.done").detail, "outside a request");

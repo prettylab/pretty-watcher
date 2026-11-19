@@ -22,9 +22,44 @@ folder without the package, use `npx -p @prettylab/pretty-watcher pretty manager
 `pretty ...` command is passed on to `@prettylab/cli`.
 
 `pair` downloads the manager's agent into `.pretty/agent.mjs` and installs it as a
-background service. The agent handles deploys, the file manager and backups. Pairing also
-writes `WATCHER_URL` and `WATCHER_TOKEN` into `.env`. The manager URL can also come from
-`SERVER_MANAGER_URL` in the environment or in `.env`.
+background service. The agent handles deploys, the file manager, backups, make targets
+started from the panel and terminals. Pairing also writes `WATCHER_URL` and `WATCHER_TOKEN`
+into `.env`. The manager URL can also come from `SERVER_MANAGER_URL` in the environment or
+in `.env`.
+
+## The agent (watchdog)
+
+The agent's source is in this package (`agent/agent.mjs`, `agent/update.sh`). Pretty Server
+Manager depends on the package and serves that copy at `/pretty/agent.mjs`, so a server
+always gets the agent that matches its manager. It needs Node.js 22+ and nothing else.
+
+What it does for the manager's project page:
+
+| Tab | |
+|---|---|
+| Deploys | backup, download the release, `make update` |
+| Backups & files | `make backup` on a schedule; file manager confined to the project folder |
+| Terminal → Shell | a shell on the host (in the project folder) or in any running container of the project's compose stack |
+| Terminal → Make | the root `Makefile`'s targets, grouped by their `# SECTION` comments; one runs at a time, output kept in the history |
+
+Terminals need `python3` on the server (it makes the pseudo-terminal; without it `script`
+is used and the window keeps its first size). Containers are reached through the
+Makefile's `COMPOSE` variable, or a plain `docker/compose.yml`. Only the project's managers
+can open terminals or run targets, and every terminal opened is in the activity log.
+
+To refuse terminals on one server, add `TERMINAL=off` to `.pretty/manager.env` and restart
+the agent (`node .pretty/agent.mjs service`). Make targets keep working.
+
+## Publishing
+
+```bash
+npm run release -- --dry-run      # build, test and show the tarball; nothing is uploaded
+npm run release -- minor          # bump (patch|minor|major|x.y.z), test, publish, commit + tag
+```
+
+`scripts/publish.sh` works for any package: it reads the name and version from
+`package.json`, refuses a version that is already on npm or a dirty git tree
+(`--allow-dirty`), runs `prepublishOnly`, then publishes (`--tag`, `--otp`, `--no-git`).
 
 To only watch an app, without deploys, add it under Projects → Add project in the manager
 and copy the token into `.env` yourself.
@@ -60,9 +95,11 @@ That alone records the following:
 | Request | Action | Label |
 |---|---|---|
 | `POST /api/admin/participant` | `participant.create` | Create participant |
-| `PATCH /api/admin/participant/12` | `participant.update` | Update participant · #12 |
+| `PATCH /api/admin/users/12` | `user.update` | Update user · #12 |
+| `POST /api/items/Ab3x/unlock` | `item.unlock` | Unlock item |
+| `POST /api/login` | `login` | Login |
 | `PATCH /api/admin/round/12/activate` | `round.activate` | Activate round · #12 |
-| Server Action on `/admin/users` | `users.action` | Action on users |
+| Server Action on `/admin/users` | `user.action` | Action on user |
 
 ## Hooks: add details from the app
 
