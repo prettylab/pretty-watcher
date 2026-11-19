@@ -1,12 +1,11 @@
-# @prettylab/watcher
+# @prettylab/pretty-watcher
 
-Logs, HTTP traffic and user actions from a Node app, pushed to
-[Pretty Server Manager](https://github.com/prettylab/pretty-server-manager). It has no
-dependencies. It also ships the `pretty manager` command, which links a project to the
-manager.
+Logs, HTTP traffic and user actions from a Node app, pushed to Pretty Server Manager.
+It has no dependencies. It also ships the `pretty manager` command, which links a project
+to the manager.
 
 ```bash
-npm install @prettylab/watcher
+npm install @prettylab/pretty-watcher
 ```
 
 ## Link a project
@@ -19,7 +18,7 @@ npx pretty manager unpair          # drops the link, removes the agent, its serv
 
 Install the package first: `npx pretty` runs the `pretty` command from the project's
 `node_modules`. Without it, npx would fetch the unrelated `pretty` package from npm. In a
-folder without the package, use `npx -p @prettylab/watcher pretty manager pair`. Any other
+folder without the package, use `npx -p @prettylab/pretty-watcher pretty manager pair`. Any other
 `pretty ...` command is passed on to `@prettylab/cli`.
 
 `pair` downloads the manager's agent into `.pretty/agent.mjs` and installs it as a
@@ -38,7 +37,7 @@ Call it once per process. Without `WATCHER_URL` and `WATCHER_TOKEN` it does noth
 // Next.js: instrumentation.ts
 export async function register() {
   if (process.env.NEXT_RUNTIME === "nodejs") {
-    const { startWatcher } = await import("@prettylab/watcher");
+    const { startWatcher } = await import("@prettylab/pretty-watcher");
     startWatcher({
       service: "app",
       // Resolver: who is signed in, from the cookies (cached for a minute per cookie)
@@ -68,7 +67,7 @@ That alone records the following:
 ## Hooks: add details from the app
 
 ```ts
-import { watch, watchActor, trackAction } from "@prettylab/watcher";
+import { watch, watchActor, trackAction } from "@prettylab/pretty-watcher";
 
 // Anywhere while a request is handled (route, Server Action, service...):
 watch({ target: participant.name, detail: "status → paid" });

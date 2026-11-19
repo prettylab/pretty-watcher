@@ -1,4 +1,4 @@
-// @prettylab/watcher - logs, HTTP traffic and user actions from a Node app,
+// @prettylab/pretty-watcher - logs, HTTP traffic and user actions from a Node app,
 // pushed to Pretty Server Manager.
 //
 // Call startWatcher() once per process (Next instrumentation.ts register(),
