@@ -1,6 +1,6 @@
 {
   "name": "@prettylab/pretty-watcher",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Logs, HTTP traffic and user actions from a Node app, pushed to Pretty Server Manager - plus the manager's watchdog agent",
   "license": "MIT",
   "type": "module",
