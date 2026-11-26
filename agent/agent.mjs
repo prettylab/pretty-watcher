@@ -125,6 +125,7 @@ const projectInfo = () => {
     terminal: terminalEnabled(),
     make: fs.existsSync(path.join(ROOT, "Makefile")),
     commandRun: currentCommand?.runId ?? null,
+    deployRun: currentDeploy?.deploymentId ?? null,
   };
 };
 
@@ -430,6 +431,8 @@ const files = {
 let busy = null;
 let currentBackup = null;
 let currentCommand = null;
+// { deploymentId, child, cancelled } while a deployment runs.
+let currentDeploy = null;
 
 const hasHook = () => {
   for (const file of ["Makefile", "scripts/make/core.mk"]) {
@@ -451,11 +454,15 @@ const hasBackupTarget = () =>
 
 const runStreaming = (command, env, onText) =>
   new Promise((resolve) => {
+    if (currentDeploy?.cancelled) return resolve(130);
+    // Own process group, so a force stop kills docker compose & co. as well.
     const child = spawn("bash", ["-c", command], {
       cwd: ROOT,
       env: { ...process.env, ...env, CI: "1" },
       stdio: ["ignore", "pipe", "pipe"],
+      detached: true,
     });
+    if (currentDeploy) currentDeploy.child = child;
     child.stdout.on("data", (chunk) => onText(chunk.toString()));
     child.stderr.on("data", (chunk) => onText(chunk.toString()));
     child.on("close", (code) => resolve(code ?? 1));
@@ -476,6 +483,8 @@ const deploy = async (connection, message) => {
     return;
   }
   busy = "deploy";
+  currentDeploy = { deploymentId, child: null, cancelled: false };
+  connection.emit({ type: "info", info: projectInfo() });
 
   let buffer = "";
   const flush = () => {
@@ -539,12 +548,13 @@ const deploy = async (connection, message) => {
     flush();
     status("done", "deploy", { releaseId: release.id });
   } catch (error) {
-    say(`Failed: ${error.message}`);
+    say(currentDeploy?.cancelled ? "Stopped from the panel" : `Failed: ${error.message}`);
     flush();
     status("failed", null);
   } finally {
     clearInterval(timer);
     busy = null;
+    currentDeploy = null;
     connection.emit({ type: "info", info: projectInfo() });
   }
 };
@@ -1042,6 +1052,22 @@ const cancelMake = (message) => {
   }, 10_000).unref();
 };
 
+// Force stop from the panel: kill the step that runs (its process group).
+const cancelDeploy = (message) => {
+  if (!currentDeploy || currentDeploy.deploymentId !== Number(message.deploymentId)) return;
+  currentDeploy.cancelled = true;
+  const { child } = currentDeploy;
+  if (!child) return;
+  try {
+    process.kill(-child.pid, "SIGTERM");
+  } catch {}
+  setTimeout(() => {
+    try {
+      process.kill(-child.pid, "SIGKILL");
+    } catch {}
+  }, 10_000).unref();
+};
+
 // ---------- daemon
 
 const run = () => {
@@ -1127,6 +1153,8 @@ const run = () => {
         void runMake(connection, message);
       } else if (message.type === "make.cancel") {
         cancelMake(message);
+      } else if (message.type === "deploy.cancel") {
+        cancelDeploy(message);
       } else if (message.type === "term.open") {
         openTerminal(live, message);
       } else if (message.type?.startsWith("term.")) {
